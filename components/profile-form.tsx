@@ -33,7 +33,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       const path = `${profile.id}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(path, file, { upsert: true });
+        .upload(path, file);
 
       if (uploadError) {
         setMessage(`Upload failed: ${uploadError.message}`);
