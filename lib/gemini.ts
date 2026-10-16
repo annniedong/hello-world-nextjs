@@ -1,6 +1,17 @@
 import { ApiError, GoogleGenAI } from "@google/genai";
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+const PRIMARY_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+
+// If the preferred model is busy, slow, or retired, fall through to faster ones.
+// Worst case is 12s + 10s + 10s, well inside the 60s route limit.
+const ATTEMPTS = [
+  { model: PRIMARY_MODEL, timeoutMs: 12_000 },
+  { model: "gemini-3.5-flash-lite", timeoutMs: 10_000 },
+  { model: "gemini-3.1-flash-lite", timeoutMs: 10_000 },
+].filter(
+  (attempt, index, all) =>
+    all.findIndex((other) => other.model === attempt.model) === index,
+);
 
 const RESPONSE_SCHEMA = {
   type: "object",
@@ -26,6 +37,19 @@ export class CaptionError extends Error {
   }
 }
 
+// Problems another model might not have: overload, rate limits, timeouts, a
+// retired model. A bad request or bad key would fail the same way everywhere.
+function canTryNextModel(error: unknown): boolean {
+  if (error instanceof ApiError) {
+    return [404, 408, 429, 500, 502, 503, 504].includes(error.status);
+  }
+  return true;
+}
+
+function isBusy(error: unknown): boolean {
+  return error instanceof ApiError && [429, 503].includes(error.status);
+}
+
 export async function generateCaptions(args: {
   bytes: Buffer;
   mimeType: string;
@@ -37,37 +61,51 @@ export async function generateCaptions(args: {
   }
 
   const ai = new GoogleGenAI({ apiKey });
+  const contents = [
+    {
+      inlineData: {
+        mimeType: args.mimeType,
+        data: args.bytes.toString("base64"),
+      },
+    },
+    { text: args.prompt },
+  ];
 
   let text: string | undefined;
-  try {
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents: [
-        {
-          inlineData: {
-            mimeType: args.mimeType,
-            data: args.bytes.toString("base64"),
-          },
+  let usedModel = PRIMARY_MODEL;
+  let sawBusy = false;
+
+  for (const { model, timeoutMs } of ATTEMPTS) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents,
+        config: {
+          responseMimeType: "application/json",
+          responseJsonSchema: RESPONSE_SCHEMA,
+          httpOptions: { timeout: timeoutMs },
         },
-        { text: args.prompt },
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseJsonSchema: RESPONSE_SCHEMA,
-      },
-    });
-    text = response.text;
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 429) {
-      throw new CaptionError("rate_limit", "Gemini rate limit reached");
+      });
+      text = response.text;
+      usedModel = model;
+      break;
+    } catch (error) {
+      if (isBusy(error)) sawBusy = true;
+      console.error(`Gemini request failed on ${model}`, error);
+      if (!canTryNextModel(error)) break;
     }
-    console.error("Gemini request failed", error);
+  }
+
+  if (text === undefined) {
+    if (sawBusy) {
+      throw new CaptionError("rate_limit", "Gemini is busy or rate limited");
+    }
     throw new CaptionError("failed", "Gemini request failed");
   }
 
   let parsed: { safe?: unknown; captions?: unknown };
   try {
-    parsed = JSON.parse(text ?? "");
+    parsed = JSON.parse(text);
   } catch {
     throw new CaptionError("failed", "Gemini returned malformed JSON");
   }
@@ -80,5 +118,5 @@ export async function generateCaptions(args: {
         .slice(0, 3)
     : [];
 
-  return { safe: parsed.safe === true, captions, model: MODEL };
+  return { safe: parsed.safe === true, captions, model: usedModel };
 }

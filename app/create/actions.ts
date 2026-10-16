@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CaptionError, generateCaptions } from "@/lib/gemini";
 import { buildPrompt, getVoice } from "@/lib/voices";
@@ -16,7 +15,7 @@ const DAILY_LIMIT = 10;
 
 export async function createPost(
   formData: FormData,
-): Promise<{ error: string }> {
+): Promise<{ id: string } | { error: string }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -108,5 +107,5 @@ export async function createPost(
   }
 
   revalidatePath("/");
-  redirect(`/image/${image.id}?new=1`);
+  return { id: image.id };
 }

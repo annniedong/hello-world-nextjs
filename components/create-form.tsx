@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition, type DragEvent, type FormEvent } from "react";
 import { createPost } from "@/app/create/actions";
 import { GeneratingOverlay } from "@/components/generating-overlay";
@@ -9,6 +10,8 @@ import { SubwayBullet } from "@/components/subway-bullet";
 import { buttonClass } from "@/lib/ui";
 import type { Voice } from "@/lib/voices";
 
+// Keep the loading screen up long enough to read as intentional, not a flicker.
+const MIN_OVERLAY_MS = 3500;
 const MAX_DIMENSION = 1280;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -51,8 +54,10 @@ export function CreateForm({
     voices.some((v) => v.id === defaultVoiceId) ? defaultVoiceId! : voices[0].id,
   );
   const [dragging, setDragging] = useState(false);
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [busy, setBusy] = useState(false);
+  const [, startTransition] = useTransition();
 
   const voice = voices.find((v) => v.id === voiceId) ?? voices[0];
 
@@ -70,7 +75,7 @@ export function CreateForm({
   function onDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setDragging(false);
-    if (!pending) onFileChange(event.dataTransfer.files?.[0] ?? null);
+    if (!busy) onFileChange(event.dataTransfer.files?.[0] ?? null);
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -80,6 +85,8 @@ export function CreateForm({
       return;
     }
     setError(null);
+    setBusy(true);
+    const startedAt = Date.now();
 
     startTransition(async () => {
       try {
@@ -87,16 +94,29 @@ export function CreateForm({
         formData.set("photo", await downscale(file));
         formData.set("voice", voice.id);
         const result = await createPost(formData);
-        if (result?.error) setError(result.error);
+
+        if ("error" in result) {
+          setError(result.error);
+          setBusy(false);
+          return;
+        }
+
+        const remaining = MIN_OVERLAY_MS - (Date.now() - startedAt);
+        if (remaining > 0) {
+          await new Promise((resolve) => setTimeout(resolve, remaining));
+        }
+        // Stay "busy" so the form never flashes back before the next page.
+        router.push(`/image/${result.id}?new=1`);
       } catch {
         setError("Something went wrong. Try again.");
+        setBusy(false);
       }
     });
   }
 
   return (
     <>
-      {pending && <GeneratingOverlay photoUrl={previewUrl} voice={voice} />}
+      {busy && <GeneratingOverlay photoUrl={previewUrl} voice={voice} />}
 
       <form onSubmit={onSubmit} className="flex flex-col gap-10">
         <section aria-labelledby="step-photo">
@@ -121,7 +141,7 @@ export function CreateForm({
               id="photo"
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              disabled={pending}
+              disabled={busy}
               onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
               className="sr-only"
             />
@@ -163,7 +183,7 @@ export function CreateForm({
           </div>
         </section>
 
-        <fieldset disabled={pending} aria-labelledby="step-voice">
+        <fieldset disabled={busy} aria-labelledby="step-voice">
           <legend
             id="step-voice"
             className="mb-4 flex items-center gap-3 font-display text-xl font-black"
@@ -212,7 +232,7 @@ export function CreateForm({
         <div className="flex flex-col gap-4">
           <button
             type="submit"
-            disabled={pending}
+            disabled={busy}
             className={`${buttonClass("primary", "lg")} w-full`}
           >
             Write my captions
