@@ -1,10 +1,16 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+
+  const cookieStore = await cookies();
+  const stored = cookieStore.get("auth_next")?.value;
+  cookieStore.delete("auth_next");
+  const next = safeNext(stored ? decodeURIComponent(stored) : undefined);
 
   if (code) {
     const supabase = await createClient();
@@ -23,7 +29,8 @@ export async function GET(request: Request) {
           .single();
 
         if (!profile?.first_name || !profile?.last_name) {
-          return NextResponse.redirect(`${origin}/profile`);
+          const suffix = next === "/" ? "" : `?next=${encodeURIComponent(next)}`;
+          return NextResponse.redirect(`${origin}/profile${suffix}`);
         }
       }
 

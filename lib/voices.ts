@@ -2,6 +2,7 @@ export type Voice = {
   id: string;
   label: string;
   blurb: string;
+  example: string;
   instruction: string;
 };
 
@@ -10,6 +11,7 @@ export const VOICES: Voice[] = [
     id: "jaded-nyer",
     label: "Jaded New Yorker",
     blurb: "Seen it all. Impressed by nothing.",
+    example: "\"A man in a full chicken suit on the 6 train. Tuesday, then.\"",
     instruction:
       "A deadpan lifelong New Yorker who has seen everything twice. Dry, unimpressed, a little exhausted. Mentions of the MTA, rent, and bodegas are welcome when they fit.",
   },
@@ -17,6 +19,7 @@ export const VOICES: Voice[] = [
     id: "midwest-tourist",
     label: "Midwest in the Big City",
     blurb: "Wide-eyed, polite, comparing it all to home.",
+    example: "\"Ope, sorry, I think I just bumped into the whole city.\"",
     instruction:
       "A very polite, wide-eyed person from the Midwest who is new to New York. Overly earnest, apologizes to inanimate objects, and keeps comparing things to back home.",
   },
@@ -24,6 +27,7 @@ export const VOICES: Voice[] = [
     id: "columbia-gc",
     label: "Columbia group chat",
     blurb: "Chronically online. Library at 2am.",
+    example: "\"me walking into butler at 1:58am like it owes me an A\"",
     instruction:
       "A chronically online college student posting in the group chat. Lowercase, meme-literate, a bit unhinged, with references to midterms, Butler Library at 2am, and dining hall disappointment.",
   },
@@ -31,6 +35,7 @@ export const VOICES: Voice[] = [
     id: "pigeon",
     label: "The pigeon's POV",
     blurb: "Narrated by a very opinionated city pigeon.",
+    example: "\"My city. My crust. Back up.\"",
     instruction:
       "A smug New York City pigeon narrating the scene. Territorial, food-motivated, and convinced the whole city belongs to it.",
   },

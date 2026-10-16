@@ -108,5 +108,5 @@ export async function createPost(
   }
 
   revalidatePath("/");
-  redirect(`/image/${image.id}`);
+  redirect(`/image/${image.id}?new=1`);
 }

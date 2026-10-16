@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useOptimistic, useState, useTransition } from "react";
 import { castVote } from "@/app/actions/vote";
+import { ArrowDownIcon, ArrowUpIcon } from "@/components/icons";
 
 type Vote = -1 | 0 | 1;
 
-const arrow =
-  "flex h-8 w-8 items-center justify-center rounded text-sm transition-colors";
+const target =
+  "grid h-9 w-9 place-items-center rounded-full transition-colors";
+const idle = "text-muted hover:bg-border hover:text-foreground";
 
 export function VoteButtons({
   captionId,
@@ -20,6 +23,7 @@ export function VoteButtons({
   myVote: Vote;
   signedIn: boolean;
 }) {
+  const pathname = usePathname();
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [optimistic, setOptimistic] = useOptimistic(
@@ -39,63 +43,64 @@ export function VoteButtons({
     });
   }
 
-  if (!signedIn) {
-    return (
-      <div className="flex flex-col items-center">
-        <Link
-          href="/login"
-          title="Sign in to vote"
-          aria-label="Sign in to upvote"
-          className={`${arrow} text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800`}
-        >
-          ▲
-        </Link>
-        <span className="text-sm font-medium tabular-nums">{score}</span>
-        <Link
-          href="/login"
-          title="Sign in to vote"
-          aria-label="Sign in to downvote"
-          className={`${arrow} text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800`}
-        >
-          ▼
-        </Link>
-      </div>
-    );
-  }
+  const loginHref = `/login?next=${encodeURIComponent(pathname)}`;
 
   return (
-    <div className="flex flex-col items-center">
-      <button
-        type="button"
-        onClick={() => vote(1)}
-        aria-label="Upvote"
-        aria-pressed={optimistic.myVote === 1}
-        className={`${arrow} ${
-          optimistic.myVote === 1
-            ? "bg-emerald-600 text-white"
-            : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-        }`}
-      >
-        ▲
-      </button>
-      <span className="text-sm font-medium tabular-nums">
-        {optimistic.score}
-      </span>
-      <button
-        type="button"
-        onClick={() => vote(-1)}
-        aria-label="Downvote"
-        aria-pressed={optimistic.myVote === -1}
-        className={`${arrow} ${
-          optimistic.myVote === -1
-            ? "bg-rose-600 text-white"
-            : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-        }`}
-      >
-        ▼
-      </button>
+    <div className="flex shrink-0 flex-col items-end gap-1">
+      <div className="flex items-center rounded-full border border-border bg-surface-2 p-0.5">
+        {signedIn ? (
+          <button
+            type="button"
+            onClick={() => vote(1)}
+            aria-label="Upvote: funny"
+            aria-pressed={optimistic.myVote === 1}
+            title="Funny"
+            className={`${target} ${optimistic.myVote === 1 ? "bg-up text-background" : idle}`}
+          >
+            <ArrowUpIcon className="h-4 w-4" />
+          </button>
+        ) : (
+          <Link
+            href={loginHref}
+            aria-label="Sign in to upvote"
+            title="Sign in to vote"
+            className={`${target} ${idle}`}
+          >
+            <ArrowUpIcon className="h-4 w-4" />
+          </Link>
+        )}
+
+        <span
+          className="min-w-8 text-center text-sm font-semibold tabular-nums"
+          aria-label={`Score ${signedIn ? optimistic.score : score}`}
+        >
+          {signedIn ? optimistic.score : score}
+        </span>
+
+        {signedIn ? (
+          <button
+            type="button"
+            onClick={() => vote(-1)}
+            aria-label="Downvote: not funny"
+            aria-pressed={optimistic.myVote === -1}
+            title="Not funny"
+            className={`${target} ${optimistic.myVote === -1 ? "bg-down text-background" : idle}`}
+          >
+            <ArrowDownIcon className="h-4 w-4" />
+          </button>
+        ) : (
+          <Link
+            href={loginHref}
+            aria-label="Sign in to downvote"
+            title="Sign in to vote"
+            className={`${target} ${idle}`}
+          >
+            <ArrowDownIcon className="h-4 w-4" />
+          </Link>
+        )}
+      </div>
       {error && (
-        <span role="alert" className="mt-1 max-w-24 text-center text-xs text-red-600">
+        <span role="alert" className="max-w-32 text-right text-xs text-down">
           {error}
         </span>
       )}

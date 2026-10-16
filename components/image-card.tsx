@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { VoteButtons } from "@/components/vote-buttons";
 import { photoUrl } from "@/lib/storage";
+import { timeAgo } from "@/lib/time";
 import { getVoice } from "@/lib/voices";
 import type { MyVotes } from "@/lib/votes";
 
@@ -34,38 +35,54 @@ export function ImageCard({
   const voiceLabel = captions[0] && getVoice(captions[0].style)?.label;
 
   const photo = (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={photoUrl(image.storage_path)}
-      alt="A photo shared on NYC Captions"
-      loading="lazy"
-      className="aspect-[4/3] w-full bg-zinc-100 object-cover dark:bg-zinc-900"
-    />
+    <div className="bg-surface-2">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={photoUrl(image.storage_path)}
+        alt="A photo shared on NYC Captions"
+        loading="lazy"
+        className="mx-auto block max-h-[34rem] min-h-48 w-full object-contain"
+      />
+    </div>
   );
 
   return (
-    <article className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
-      {linkToPage ? <Link href={`/image/${image.id}`}>{photo}</Link> : photo}
-      <div className="flex flex-col gap-1 p-2">
-        {voiceLabel && (
-          <p className="px-2 pt-1 text-xs uppercase tracking-wide text-zinc-500">
+    <article className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+      {linkToPage ? (
+        <Link href={`/image/${image.id}`} aria-label="Open this photo">
+          {photo}
+        </Link>
+      ) : (
+        photo
+      )}
+
+      <div className="flex items-center justify-between gap-3 px-4 pt-3 text-xs text-muted">
+        {voiceLabel ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 font-medium text-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
             {voiceLabel}
-          </p>
+          </span>
+        ) : (
+          <span />
         )}
-        <ul className="flex flex-col">
-          {captions.map((caption) => (
-            <li key={caption.id} className="flex items-center gap-3 p-2">
-              <VoteButtons
-                captionId={caption.id}
-                score={caption.score}
-                myVote={myVotes.get(caption.id) ?? 0}
-                signedIn={signedIn}
-              />
-              <p className="flex-1">{caption.content}</p>
-            </li>
-          ))}
-        </ul>
+        <time dateTime={image.created_at}>{timeAgo(image.created_at)}</time>
       </div>
+
+      <ul className="divide-y divide-border">
+        {captions.map((caption) => (
+          <li key={caption.id} className="flex items-center gap-4 px-4 py-4">
+            <p className="flex-1 text-[17px] font-medium leading-snug">
+              {caption.content}
+            </p>
+            <VoteButtons
+              captionId={caption.id}
+              score={caption.score}
+              myVote={myVotes.get(caption.id) ?? 0}
+              signedIn={signedIn}
+            />
+          </li>
+        ))}
+      </ul>
     </article>
   );
 }

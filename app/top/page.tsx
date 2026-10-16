@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { VoteButtons } from "@/components/vote-buttons";
-import { createClient } from "@/lib/supabase/server";
+import { getTopCaptions } from "@/lib/queries";
 import { photoUrl } from "@/lib/storage";
-import { hoursAgo } from "@/lib/time";
+import { getViewer } from "@/lib/viewer";
 import { getMyVotes } from "@/lib/votes";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Top captions" };
 
 const PERIODS = {
   today: { label: "Today", hours: 24 },
@@ -15,13 +16,6 @@ const PERIODS = {
 
 type Period = keyof typeof PERIODS;
 
-type TopCaption = {
-  id: string;
-  content: string;
-  score: number;
-  images: { id: string; storage_path: string };
-};
-
 export default async function TopPage(props: PageProps<"/top">) {
   const { period: rawPeriod } = await props.searchParams;
   const period: Period =
@@ -29,26 +23,11 @@ export default async function TopPage(props: PageProps<"/top">) {
       ? (rawPeriod as Period)
       : "today";
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  let query = supabase
-    .from("captions")
-    .select("id, content, score, images(id, storage_path)")
-    .gt("vote_count", 0)
-    .order("score", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(10);
-
-  const hours = PERIODS[period].hours;
-  if (hours) {
-    query = query.gte("created_at", hoursAgo(hours));
-  }
-
-  const { data, error } = await query;
-  const captions = (data ?? []) as unknown as TopCaption[];
+  const { supabase, user } = await getViewer();
+  const { captions, error } = await getTopCaptions(supabase, {
+    hours: PERIODS[period].hours,
+    limit: 10,
+  });
   const myVotes = await getMyVotes(
     supabase,
     user?.id,
@@ -56,19 +35,22 @@ export default async function TopPage(props: PageProps<"/top">) {
   );
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-6 py-10">
-      <h1 className="mb-4 text-2xl font-semibold tracking-tight">
+    <main className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 sm:py-10">
+      <h1 className="font-display text-3xl font-bold tracking-tight">
         Top captions
       </h1>
-      <nav className="mb-6 flex gap-2 text-sm">
+      <p className="mt-1 text-muted">The funniest captions, ranked by votes.</p>
+
+      <nav aria-label="Time range" className="mb-6 mt-5 flex gap-2 text-sm">
         {(Object.keys(PERIODS) as Period[]).map((key) => (
           <Link
             key={key}
             href={`/top?period=${key}`}
-            className={`rounded-full border px-3 py-1 ${
+            aria-current={key === period ? "page" : undefined}
+            className={`rounded-full border px-4 py-1.5 font-medium transition-colors ${
               key === period
-                ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                : "border-zinc-200 dark:border-zinc-800"
+                ? "border-foreground bg-foreground text-background"
+                : "border-border bg-surface text-muted hover:text-foreground"
             }`}
           >
             {PERIODS[key].label}
@@ -77,40 +59,55 @@ export default async function TopPage(props: PageProps<"/top">) {
       </nav>
 
       {error ? (
-        <p className="text-red-600">Couldn&apos;t load the leaderboard.</p>
-      ) : captions.length === 0 ? (
-        <p className="text-zinc-500">
-          No votes yet for this period.{" "}
-          <Link href="/" className="underline">
-            Go vote on something.
-          </Link>
+        <p role="alert" className="text-down">
+          Couldn&apos;t load the leaderboard. Refresh to try again.
         </p>
+      ) : captions.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border p-10 text-center">
+          <p className="font-display text-xl font-bold">No votes yet</p>
+          <p className="mt-1 text-muted">
+            Nothing has been voted on for this time range.
+          </p>
+          <Link href="/vote" className="mt-3 inline-block font-semibold underline">
+            Go rate some photos
+          </Link>
+        </div>
       ) : (
         <ol className="flex flex-col gap-3">
           {captions.map((caption, index) => (
             <li
               key={caption.id}
-              className="flex items-center gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
+              className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-sm sm:gap-4"
             >
-              <span className="w-6 text-center text-lg font-semibold text-zinc-500">
+              <span
+                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold ${
+                  index === 0
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-surface-2 text-muted"
+                }`}
+              >
                 {index + 1}
               </span>
+              <Link
+                href={`/image/${caption.images.id}`}
+                aria-label="Open this photo"
+                className="shrink-0"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photoUrl(caption.images.storage_path)}
+                  alt=""
+                  loading="lazy"
+                  className="h-16 w-16 rounded-xl object-cover"
+                />
+              </Link>
+              <p className="flex-1 font-medium leading-snug">{caption.content}</p>
               <VoteButtons
                 captionId={caption.id}
                 score={caption.score}
                 myVote={myVotes.get(caption.id) ?? 0}
                 signedIn={Boolean(user)}
               />
-              <p className="flex-1">{caption.content}</p>
-              <Link href={`/image/${caption.images.id}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photoUrl(caption.images.storage_path)}
-                  alt="The photo this caption belongs to"
-                  loading="lazy"
-                  className="h-16 w-16 rounded object-cover"
-                />
-              </Link>
             </li>
           ))}
         </ol>

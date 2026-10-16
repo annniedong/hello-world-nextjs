@@ -1,41 +1,59 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { Avatar } from "@/components/avatar";
+import { PlusIcon } from "@/components/icons";
+import { Logo } from "@/components/logo";
+import { NavLinks } from "@/components/nav-links";
 import { SignOutButton } from "@/components/sign-out-button";
+import { buttonClass } from "@/lib/ui";
+import { getViewer, getViewerProfile } from "@/lib/viewer";
 
 export async function Nav() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getViewer();
+  const profile = await getViewerProfile();
 
   return (
-    <nav className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-zinc-200 px-6 py-4 text-sm dark:border-zinc-800">
-      <Link href="/" className="font-semibold">
-        NYC Captions
-      </Link>
-      <div className="flex flex-wrap items-center gap-4">
-        <Link href="/top" className="hover:underline">
-          Top
-        </Link>
-        {user ? (
-          <>
-            <Link href="/create" className="hover:underline">
-              Add photo
-            </Link>
-            <Link href="/dashboard" className="hover:underline">
-              My photos
-            </Link>
-            <Link href="/profile" className="hover:underline">
-              Profile
-            </Link>
-            <SignOutButton />
-          </>
-        ) : (
-          <Link href="/login" className="hover:underline">
-            Sign in
-          </Link>
-        )}
+    <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
+      <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
+        <div className="flex items-center gap-6">
+          <Logo />
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
+            <NavLinks signedIn={Boolean(user)} />
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {user ? (
+            <>
+              <div className="hidden md:block">
+                <Link href="/create" className={buttonClass("primary")}>
+                  <PlusIcon className="h-4 w-4" />
+                  Add photo
+                </Link>
+              </div>
+              <Link href="/profile" aria-label="Your profile" className="rounded-full">
+                <Avatar
+                  url={profile?.avatar_url}
+                  name={profile?.first_name ?? user.email}
+                />
+              </Link>
+              <div className="hidden pl-1 md:block">
+                <SignOutButton />
+              </div>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className={buttonClass("secondary")}>
+                Sign in
+              </Link>
+              <div className="hidden md:block">
+                <Link href="/create" className={buttonClass("primary")}>
+                  Start captioning
+                </Link>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    </nav>
+    </header>
   );
 }
