@@ -1,12 +1,13 @@
 import { ApiError, GoogleGenAI } from "@google/genai";
 
-const PRIMARY_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+const PRIMARY_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
-// If the preferred model is busy, slow, or retired, fall through to faster ones.
-// Worst case is 12s + 10s + 10s, well inside the 60s route limit.
+// The fast model leads: its captions were comparable to the larger model's in
+// testing and it answers in about a second. If it is busy, slow, or retired, we
+// fall through to the others. Worst case is 10s + 15s + 10s, inside the 60s limit.
 const ATTEMPTS = [
-  { model: PRIMARY_MODEL, timeoutMs: 12_000 },
-  { model: "gemini-3.5-flash-lite", timeoutMs: 10_000 },
+  { model: PRIMARY_MODEL, timeoutMs: 10_000 },
+  { model: "gemini-3.5-flash", timeoutMs: 15_000 },
   { model: "gemini-3.1-flash-lite", timeoutMs: 10_000 },
 ].filter(
   (attempt, index, all) =>
