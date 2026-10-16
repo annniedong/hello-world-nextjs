@@ -1,6 +1,7 @@
 export type Voice = {
   id: string;
   label: string;
+  line: string;
   blurb: string;
   example: string;
   instruction: string;
@@ -10,6 +11,7 @@ export const VOICES: Voice[] = [
   {
     id: "jaded-nyer",
     label: "Jaded New Yorker",
+    line: "6",
     blurb: "Seen it all. Impressed by nothing.",
     example: "\"A man in a full chicken suit on the 6 train. Tuesday, then.\"",
     instruction:
@@ -18,6 +20,7 @@ export const VOICES: Voice[] = [
   {
     id: "midwest-tourist",
     label: "Midwest in the Big City",
+    line: "N",
     blurb: "Wide-eyed, polite, comparing it all to home.",
     example: "\"Ope, sorry, I think I just bumped into the whole city.\"",
     instruction:
@@ -26,6 +29,7 @@ export const VOICES: Voice[] = [
   {
     id: "columbia-gc",
     label: "Columbia group chat",
+    line: "1",
     blurb: "Chronically online. Library at 2am.",
     example: "\"me walking into butler at 1:58am like it owes me an A\"",
     instruction:
@@ -34,6 +38,7 @@ export const VOICES: Voice[] = [
   {
     id: "pigeon",
     label: "The pigeon's POV",
+    line: "A",
     blurb: "Narrated by a very opinionated city pigeon.",
     example: "\"My city. My crust. Back up.\"",
     instruction:

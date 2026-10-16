@@ -22,10 +22,10 @@ export function NavLinks({ signedIn }: { signedIn: boolean }) {
             key={link.href}
             href={link.href}
             aria-current={active ? "page" : undefined}
-            className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+            className={`rounded-xl px-3.5 py-2 text-sm font-extrabold uppercase tracking-wide transition-colors ${
               active
-                ? "bg-surface-2 text-foreground"
-                : "text-muted hover:text-foreground"
+                ? "bg-blue/10 text-blue"
+                : "text-muted hover:bg-surface-2 hover:text-foreground"
             }`}
           >
             {link.label}

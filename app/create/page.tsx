@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { CreateForm } from "@/components/create-form";
+import { getPrefs } from "@/lib/prefs";
 import { getViewer } from "@/lib/viewer";
 import { todaysChallenge, VOICES } from "@/lib/voices";
 
@@ -14,16 +15,20 @@ export default async function CreatePage() {
     redirect("/login?next=%2Fcreate");
   }
 
+  const { voiceId } = await getPrefs();
+
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 sm:py-10">
-      <h1 className="font-display text-3xl font-bold tracking-tight">
+    <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+      <h1 className="font-display text-4xl font-black tracking-tight">
         Add a photo
       </h1>
-      <p className="mb-8 mt-2 rounded-2xl bg-accent/25 p-4 text-sm">
-        <span className="font-semibold">Today&apos;s challenge:</span>{" "}
+      <p className="mb-10 mt-4 rounded-2xl border-2 border-yellow bg-yellow/15 p-4 text-sm font-bold">
+        <span className="font-black uppercase tracking-wide">
+          Today&apos;s challenge:
+        </span>{" "}
         {todaysChallenge()}
       </p>
-      <CreateForm voices={VOICES} />
+      <CreateForm voices={VOICES} defaultVoiceId={voiceId} />
     </main>
   );
 }

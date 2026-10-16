@@ -15,26 +15,30 @@ export async function TopToday() {
   if (captions.length === 0) return null;
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <section className="rounded-3xl border-2 border-border bg-surface p-5">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-lg font-bold">
+        <h2 className="font-display text-xl font-black">
           {isToday ? "Top today" : "Top of all time"}
         </h2>
         <Link
           href="/top"
-          className="text-sm font-medium text-muted hover:text-foreground"
+          className="text-xs font-extrabold uppercase tracking-wide text-blue hover:underline"
         >
           See all
         </Link>
       </div>
-      <ol className="mt-3 flex flex-col gap-3">
+      <ol className="mt-3 flex flex-col gap-1.5">
         {captions.map((caption, index) => (
           <li key={caption.id}>
             <Link
               href={`/image/${caption.images.id}`}
-              className="flex items-center gap-3 rounded-xl p-1 hover:bg-surface-2"
+              className="flex items-center gap-3 rounded-2xl p-1.5 transition-colors hover:bg-surface-2"
             >
-              <span className="w-4 text-center text-sm font-bold text-muted">
+              <span
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-black ${
+                  index === 0 ? "bg-yellow text-yellow-foreground" : "bg-surface-2 text-muted"
+                }`}
+              >
                 {index + 1}
               </span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -42,12 +46,12 @@ export async function TopToday() {
                 src={photoUrl(caption.images.storage_path)}
                 alt=""
                 loading="lazy"
-                className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                className="h-12 w-12 shrink-0 rounded-xl object-cover"
               />
-              <span className="line-clamp-2 flex-1 text-sm leading-snug">
+              <span className="line-clamp-2 flex-1 text-sm font-bold leading-snug">
                 {caption.content}
               </span>
-              <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold tabular-nums">
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-black tabular-nums text-primary">
                 {caption.score > 0 ? `+${caption.score}` : caption.score}
               </span>
             </Link>

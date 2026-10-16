@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubwayBullet } from "@/components/subway-bullet";
 import { VoteButtons } from "@/components/vote-buttons";
 import { photoUrl } from "@/lib/storage";
 import { timeAgo } from "@/lib/time";
@@ -32,7 +33,7 @@ export function ImageCard({
 }) {
   // Stable order (not by score) so the vote buttons don't jump under the cursor.
   const captions = [...image.captions].sort((a, b) => a.id.localeCompare(b.id));
-  const voiceLabel = captions[0] && getVoice(captions[0].style)?.label;
+  const voice = captions[0] ? getVoice(captions[0].style) : undefined;
 
   const photo = (
     <div className="bg-surface-2">
@@ -47,7 +48,7 @@ export function ImageCard({
   );
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+    <article className="overflow-hidden rounded-3xl border-2 border-border bg-surface">
       {linkToPage ? (
         <Link href={`/image/${image.id}`} aria-label="Open this photo">
           {photo}
@@ -56,11 +57,11 @@ export function ImageCard({
         photo
       )}
 
-      <div className="flex items-center justify-between gap-3 px-4 pt-3 text-xs text-muted">
-        {voiceLabel ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 font-medium text-foreground">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
-            {voiceLabel}
+      <div className="flex items-center justify-between gap-3 px-4 pt-4 text-xs font-bold text-muted">
+        {voice ? (
+          <span className="inline-flex items-center gap-2 rounded-full border-2 border-border bg-background py-1 pl-1 pr-3 text-foreground">
+            <SubwayBullet line={voice.line} size={22} />
+            <span className="text-xs font-extrabold">{voice.label}</span>
           </span>
         ) : (
           <span />
@@ -68,10 +69,10 @@ export function ImageCard({
         <time dateTime={image.created_at}>{timeAgo(image.created_at)}</time>
       </div>
 
-      <ul className="divide-y divide-border">
+      <ul className="mt-1 divide-y-2 divide-border">
         {captions.map((caption) => (
           <li key={caption.id} className="flex items-center gap-4 px-4 py-4">
-            <p className="flex-1 text-[17px] font-medium leading-snug">
+            <p className="flex-1 text-[17px] font-bold leading-snug">
               {caption.content}
             </p>
             <VoteButtons

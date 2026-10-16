@@ -2,7 +2,10 @@
 
 import { useState, useTransition, type DragEvent, type FormEvent } from "react";
 import { createPost } from "@/app/create/actions";
+import { GeneratingOverlay } from "@/components/generating-overlay";
 import { CameraIcon } from "@/components/icons";
+import { Pigeon } from "@/components/pigeon";
+import { SubwayBullet } from "@/components/subway-bullet";
 import { buttonClass } from "@/lib/ui";
 import type { Voice } from "@/lib/voices";
 
@@ -27,27 +30,31 @@ async function downscale(file: File): Promise<File> {
   return new File([blob], "photo.jpg", { type: "image/jpeg" });
 }
 
-function Spinner() {
+function StepBadge({ n }: { n: number }) {
   return (
-    <svg
-      className="h-5 w-5 animate-spin"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" opacity="0.25" />
-      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    </svg>
+    <span className="grid h-8 w-8 place-items-center rounded-full bg-blue text-sm font-black text-white shadow-[0_3px_0_var(--blue-dark)]">
+      {n}
+    </span>
   );
 }
 
-export function CreateForm({ voices }: { voices: Voice[] }) {
+export function CreateForm({
+  voices,
+  defaultVoiceId,
+}: {
+  voices: Voice[];
+  defaultVoiceId?: string;
+}) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [voice, setVoice] = useState(voices[0].id);
+  const [voiceId, setVoiceId] = useState(
+    voices.some((v) => v.id === defaultVoiceId) ? defaultVoiceId! : voices[0].id,
+  );
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const voice = voices.find((v) => v.id === voiceId) ?? voices[0];
 
   function onFileChange(selected: File | null) {
     if (selected && !ALLOWED_TYPES.includes(selected.type)) {
@@ -78,7 +85,7 @@ export function CreateForm({ voices }: { voices: Voice[] }) {
       try {
         const formData = new FormData();
         formData.set("photo", await downscale(file));
-        formData.set("voice", voice);
+        formData.set("voice", voice.id);
         const result = await createPost(formData);
         if (result?.error) setError(result.error);
       } catch {
@@ -88,135 +95,138 @@ export function CreateForm({ voices }: { voices: Voice[] }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-8">
-      <section aria-labelledby="step-photo">
-        <h2 id="step-photo" className="mb-3 flex items-center gap-2 font-display text-lg font-bold">
-          <span className="grid h-6 w-6 place-items-center rounded-full bg-foreground text-xs text-background">1</span>
-          Choose a photo
-        </h2>
+    <>
+      {pending && <GeneratingOverlay photoUrl={previewUrl} voice={voice} />}
 
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={onDrop}
-          className="focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-foreground"
-        >
-          <input
-            id="photo"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            disabled={pending}
-            onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
-            className="sr-only"
-          />
+      <form onSubmit={onSubmit} className="flex flex-col gap-10">
+        <section aria-labelledby="step-photo">
+          <h2
+            id="step-photo"
+            className="mb-4 flex items-center gap-3 font-display text-xl font-black"
+          >
+            <StepBadge n={1} />
+            Choose a photo
+          </h2>
 
-          {previewUrl ? (
-            <div className="relative overflow-hidden rounded-2xl border border-border bg-surface-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={previewUrl}
-                alt="Preview of your photo"
-                className="mx-auto max-h-96 w-full object-contain"
-              />
-              {!pending && (
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+            className="rounded-3xl focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-blue"
+          >
+            <input
+              id="photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={pending}
+              onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+              className="sr-only"
+            />
+
+            {previewUrl ? (
+              <div className="animate-pop relative overflow-hidden rounded-3xl border-2 border-border bg-surface-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={previewUrl}
+                  alt="Preview of your photo"
+                  className="mx-auto max-h-96 w-full object-contain"
+                />
                 <label
                   htmlFor="photo"
-                  className={`${buttonClass("secondary")} absolute right-3 top-3 cursor-pointer shadow-sm`}
+                  className={`${buttonClass("secondary")} absolute right-3 top-3 cursor-pointer`}
                 >
-                  Change photo
+                  Change
                 </label>
-              )}
-            </div>
-          ) : (
-            <label
-              htmlFor="photo"
-              className={`flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${
-                dragging
-                  ? "border-foreground bg-surface-2"
-                  : "border-border bg-surface hover:bg-surface-2"
-              }`}
-            >
-              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground">
-                <CameraIcon className="h-7 w-7" />
-              </span>
-              <span className="mt-1 text-lg font-semibold">Choose a photo</span>
-              <span className="text-sm text-muted">
-                or drag one here. JPEG, PNG, or WebP.
-              </span>
-            </label>
-          )}
-        </div>
-      </section>
+              </div>
+            ) : (
+              <label
+                htmlFor="photo"
+                className={`flex cursor-pointer flex-col items-center gap-2 rounded-3xl border-2 border-dashed p-8 text-center transition-all ${
+                  dragging
+                    ? "scale-[1.01] border-blue bg-blue/10"
+                    : "border-border bg-surface hover:border-blue hover:bg-blue/5"
+                }`}
+              >
+                <Pigeon size={96} />
+                <span className="mt-1 flex items-center gap-2 text-xl font-black">
+                  <CameraIcon className="h-5 w-5" />
+                  Pick a photo
+                </span>
+                <span className="text-sm font-semibold text-muted">
+                  Pidge is hungry for photos. Tap here or drag one in.
+                </span>
+              </label>
+            )}
+          </div>
+        </section>
 
-      <fieldset disabled={pending} aria-labelledby="step-voice">
-        <legend id="step-voice" className="mb-3 flex items-center gap-2 font-display text-lg font-bold">
-          <span className="grid h-6 w-6 place-items-center rounded-full bg-foreground text-xs text-background">2</span>
-          Pick a voice
-        </legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {voices.map((v) => (
-            <label
-              key={v.id}
-              className={`flex cursor-pointer flex-col gap-1 rounded-2xl border p-4 transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-foreground ${
-                voice === v.id
-                  ? "border-foreground bg-surface shadow-sm"
-                  : "border-border bg-surface hover:bg-surface-2"
-              }`}
-            >
-              <input
-                type="radio"
-                name="voice"
-                value={v.id}
-                checked={voice === v.id}
-                onChange={() => setVoice(v.id)}
-                className="sr-only"
-              />
-              <span className="flex items-center gap-2 font-semibold">
-                <span
-                  className={`h-3 w-3 rounded-full border ${
-                    voice === v.id ? "border-foreground bg-accent" : "border-border"
+        <fieldset disabled={pending} aria-labelledby="step-voice">
+          <legend
+            id="step-voice"
+            className="mb-4 flex items-center gap-3 font-display text-xl font-black"
+          >
+            <StepBadge n={2} />
+            Pick your line
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {voices.map((v) => {
+              const selected = voiceId === v.id;
+              return (
+                <label
+                  key={v.id}
+                  className={`flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-4 transition-all focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-blue ${
+                    selected
+                      ? "border-blue bg-blue/10 shadow-[0_4px_0_var(--blue)]"
+                      : "border-border bg-surface shadow-[0_4px_0_var(--border)] hover:bg-surface-2"
                   }`}
-                  aria-hidden
-                />
-                {v.label}
-              </span>
-              <span className="text-sm text-muted">{v.blurb}</span>
-              <span className="mt-1 text-sm italic">{v.example}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+                >
+                  <input
+                    type="radio"
+                    name="voice"
+                    value={v.id}
+                    checked={selected}
+                    onChange={() => setVoiceId(v.id)}
+                    className="sr-only"
+                  />
+                  <SubwayBullet
+                    line={v.line}
+                    size={40}
+                    className={selected ? "animate-wiggle" : ""}
+                  />
+                  <span className="flex flex-col gap-0.5">
+                    <span className="font-extrabold">{v.label}</span>
+                    <span className="text-sm font-semibold text-muted">{v.blurb}</span>
+                    <span className="mt-1 text-sm italic text-foreground/80">
+                      {v.example}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
 
-      <div className="flex flex-col gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className={`${buttonClass("primary", "lg")} w-full`}
-        >
-          {pending ? (
-            <>
-              <Spinner />
-              Writing captions…
-            </>
-          ) : (
-            "Write my captions"
+        <div className="flex flex-col gap-4">
+          <button
+            type="submit"
+            disabled={pending}
+            className={`${buttonClass("primary", "lg")} w-full`}
+          >
+            Write my captions
+          </button>
+          {error && (
+            <p
+              role="alert"
+              className="animate-wiggle rounded-2xl border-2 border-danger/40 bg-danger/10 p-3 text-sm font-bold text-danger"
+            >
+              {error}
+            </p>
           )}
-        </button>
-        {pending && (
-          <p role="status" className="text-center text-sm text-muted">
-            Reading your photo and writing three captions. This takes about 10
-            seconds.
-          </p>
-        )}
-        {error && (
-          <p role="alert" className="rounded-xl bg-down/10 p-3 text-sm font-medium text-down">
-            {error}
-          </p>
-        )}
-      </div>
-    </form>
+        </div>
+      </form>
+    </>
   );
 }

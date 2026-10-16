@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { ChallengeCard } from "@/components/challenge-card";
+import { DailyGoalBar } from "@/components/daily-goal-bar";
 import { Hero } from "@/components/hero";
 import { ImageCard, type CardImage } from "@/components/image-card";
+import { Pigeon } from "@/components/pigeon";
+import { JoinCard, ProgressCard } from "@/components/progress-card";
 import { TopToday } from "@/components/top-today";
+import { getViewerProgress } from "@/lib/progress";
 import { buttonClass } from "@/lib/ui";
 import { getViewer } from "@/lib/viewer";
 import { getMyVotes } from "@/lib/votes";
@@ -20,6 +24,7 @@ export default async function Home(props: PageProps<"/">) {
     : PAGE_SIZE;
 
   const { supabase, user } = await getViewer();
+  const progress = await getViewerProgress();
 
   const { data, error } = await supabase
     .from("images")
@@ -38,24 +43,27 @@ export default async function Home(props: PageProps<"/">) {
     <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
       {!user && <Hero />}
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_21rem]">
         <section aria-labelledby="feed-title">
           <h2
             id="feed-title"
-            className="mb-4 font-display text-2xl font-bold tracking-tight"
+            className="mb-5 font-display text-3xl font-black tracking-tight"
           >
             Fresh captions
           </h2>
 
           {error ? (
-            <p role="alert" className="text-down">
+            <p role="alert" className="font-bold text-danger">
               Couldn&apos;t load the feed. Refresh to try again.
             </p>
           ) : images.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border p-10 text-center">
-              <p className="font-display text-xl font-bold">Nothing here yet</p>
-              <p className="mt-1 text-muted">Be the first to caption a photo.</p>
-              <Link href="/create" className={`${buttonClass("primary")} mt-4`}>
+            <div className="flex flex-col items-center rounded-3xl border-2 border-dashed border-border p-10 text-center">
+              <Pigeon size={110} />
+              <p className="mt-2 font-display text-2xl font-black">Nothing here yet</p>
+              <p className="mt-1 font-semibold text-muted">
+                Be the first to caption a photo.
+              </p>
+              <Link href="/create" className={`${buttonClass("primary", "lg")} mt-5`}>
                 Add a photo
               </Link>
             </div>
@@ -83,6 +91,14 @@ export default async function Home(props: PageProps<"/">) {
         </section>
 
         <aside className="order-first flex flex-col gap-4 lg:sticky lg:top-24 lg:order-last lg:self-start">
+          {progress && (
+            <div className="lg:hidden">
+              <DailyGoalBar votesToday={progress.votesToday} goal={progress.goal} />
+            </div>
+          )}
+          <div className="hidden lg:block">
+            {user ? <ProgressCard /> : <JoinCard />}
+          </div>
           <ChallengeCard />
           <div className="hidden lg:block">
             <TopToday />

@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DailyGoalBar } from "@/components/daily-goal-bar";
 import { ArrowRightIcon } from "@/components/icons";
 import { ImageCard, type CardImage } from "@/components/image-card";
 import { ShareButton } from "@/components/share-button";
+import { Pigeon } from "@/components/pigeon";
+import { getViewerProgress } from "@/lib/progress";
 import { pickOne } from "@/lib/random";
 import { buttonClass } from "@/lib/ui";
 import { getViewer } from "@/lib/viewer";
@@ -27,6 +30,7 @@ export default async function VotePage(props: PageProps<"/vote">) {
   const skipId = first(params.skip);
 
   const { supabase, user } = await getViewer();
+  const progress = await getViewerProgress();
 
   const { data } = await supabase
     .from("images")
@@ -57,9 +61,10 @@ export default async function VotePage(props: PageProps<"/vote">) {
 
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
-        <div className="rounded-3xl border border-border bg-surface p-10 text-center shadow-sm">
-          <p className="font-display text-3xl font-bold">You&apos;re all caught up</p>
-          <p className="mx-auto mt-2 max-w-sm text-muted">
+        <div className="flex flex-col items-center rounded-3xl border-2 border-border bg-surface p-10 text-center">
+          <Pigeon size={120} />
+          <p className="mt-2 font-display text-3xl font-black">You&apos;re all caught up</p>
+          <p className="mx-auto mt-2 max-w-sm font-semibold text-muted">
             You&apos;ve rated every photo for now. Add one of your own and check
             back later for new ones.
           </p>
@@ -93,28 +98,32 @@ export default async function VotePage(props: PageProps<"/vote">) {
     <main className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 sm:py-10">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">
+          <h1 className="font-display text-4xl font-black tracking-tight">
             Rate photos
           </h1>
-          <p className="mt-1 text-muted">Which caption is the funniest?</p>
+          <p className="mt-1 font-semibold text-muted">Which caption is the funniest?</p>
         </div>
         {user && (
-          <p className="rounded-full bg-surface-2 px-3 py-1 text-sm font-medium">
+          <p className="rounded-full border-2 border-border bg-surface px-3 py-1 text-sm font-extrabold">
             {remaining === 0 ? "Last one" : `${remaining} more to rate`}
           </p>
         )}
       </div>
 
       {!user && (
-        <p className="mb-4 rounded-2xl border border-border bg-surface p-4 text-sm">
+        <p className="mb-4 rounded-2xl border-2 border-border bg-surface p-4 text-sm font-semibold">
           <Link
             href={`/login?next=${encodeURIComponent("/vote")}`}
-            className="font-semibold underline"
+            className="font-extrabold text-blue underline"
           >
             Sign in
           </Link>{" "}
           to cast votes and keep track of what you&apos;ve rated.
         </p>
+      )}
+
+      {progress && (
+        <DailyGoalBar votesToday={progress.votesToday} goal={progress.goal} />
       )}
 
       <ImageCard

@@ -16,6 +16,7 @@ export function Avatar({
       <img
         src={url}
         alt=""
+        referrerPolicy="no-referrer"
         style={style}
         className="rounded-full border border-border object-cover"
       />

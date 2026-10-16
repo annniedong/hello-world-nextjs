@@ -1,23 +1,15 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
+import { Nunito } from "next/font/google";
+import { HideOnLogin } from "@/components/hide-on-login";
 import { MobileTabs } from "@/components/mobile-tabs";
 import { Nav } from "@/components/nav";
 import { getViewer } from "@/lib/viewer";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const display = Bricolage_Grotesque({
-  variable: "--font-display",
-  subsets: ["latin"],
+  weight: ["500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -39,12 +31,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const { user } = await getViewer();
 
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} h-full antialiased`}
-    >
-      <body className="flex min-h-full flex-col pb-20 md:pb-0">
-        <Nav />
+    <html lang="en" className={`${nunito.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col pb-24 md:pb-0">
+        <HideOnLogin>
+          <Nav />
+        </HideOnLogin>
         <div className="flex flex-1 flex-col">{children}</div>
         <MobileTabs signedIn={Boolean(user)} />
       </body>

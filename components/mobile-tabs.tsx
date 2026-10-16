@@ -13,6 +13,9 @@ import {
 export function MobileTabs({ signedIn }: { signedIn: boolean }) {
   const pathname = usePathname();
 
+  // The onboarding flow takes the whole screen.
+  if (pathname === "/login") return null;
+
   const tabs = [
     { href: "/", label: "Home", icon: HomeIcon },
     { href: "/vote", label: "Rate", icon: SparkIcon },
@@ -26,9 +29,9 @@ export function MobileTabs({ signedIn }: { signedIn: boolean }) {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
-      <ul className="mx-auto flex max-w-md items-end justify-around px-2 pb-1 pt-2">
+      <ul className="mx-auto flex max-w-md items-end justify-around px-2 pb-1.5 pt-2">
         {tabs.map(({ href, label, icon: Icon, primary }) => {
           const active =
             href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -37,18 +40,26 @@ export function MobileTabs({ signedIn }: { signedIn: boolean }) {
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className="flex flex-col items-center gap-1 py-1 text-[11px] font-medium"
+                className="flex flex-col items-center gap-1 py-1 text-[11px] font-extrabold uppercase tracking-wide"
               >
                 {primary ? (
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-accent text-accent-foreground shadow-sm">
-                    <Icon className="h-5 w-5" />
+                  <span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_4px_0_var(--primary-dark)] transition-transform active:translate-y-1 active:shadow-none">
+                    <Icon className="h-6 w-6" />
                   </span>
                 ) : (
-                  <Icon
-                    className={`h-5 w-5 ${active ? "text-foreground" : "text-muted"}`}
-                  />
+                  <span
+                    className={`grid h-9 w-12 place-items-center rounded-xl transition-colors ${
+                      active ? "bg-blue/10 text-blue" : "text-muted"
+                    }`}
+                  >
+                    <Icon className="h-6 w-6" />
+                  </span>
                 )}
-                <span className={active || primary ? "text-foreground" : "text-muted"}>
+                <span
+                  className={
+                    primary ? "text-primary" : active ? "text-blue" : "text-muted"
+                  }
+                >
                   {label}
                 </span>
               </Link>

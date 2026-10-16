@@ -32,7 +32,7 @@ export function GoogleSignInButton({ next }: { next?: string }) {
       type="button"
       onClick={handleSignIn}
       disabled={pending}
-      className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-border bg-white px-6 text-base font-semibold text-[#1f1f1f] shadow-sm transition-colors hover:bg-[#f7f7f7] disabled:opacity-60"
+      className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl border-2 border-[#dadce0] bg-white px-6 text-base font-extrabold text-[#1f1f1f] shadow-[0_4px_0_#dadce0] transition-[transform,box-shadow] duration-100 hover:bg-[#f8f9fa] active:translate-y-1 active:shadow-none disabled:opacity-60"
     >
       <GoogleIcon />
       {pending ? "Opening Google…" : "Continue with Google"}

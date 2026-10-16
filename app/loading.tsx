@@ -1,26 +1,23 @@
+import { Pigeon } from "@/components/pigeon";
+
 export default function Loading() {
   return (
     <main
-      className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 sm:py-10"
+      className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-5 px-4 py-16 text-center"
       aria-busy="true"
       aria-live="polite"
     >
-      <span className="sr-only">Loading…</span>
-      <div className="animate-pulse space-y-6">
-        <div className="h-8 w-48 rounded-lg bg-surface-2" />
-        {[0, 1].map((i) => (
-          <div
-            key={i}
-            className="overflow-hidden rounded-2xl border border-border bg-surface"
-          >
-            <div className="h-64 bg-surface-2" />
-            <div className="space-y-3 p-4">
-              <div className="h-4 w-3/4 rounded bg-surface-2" />
-              <div className="h-4 w-2/3 rounded bg-surface-2" />
-            </div>
-          </div>
+      <Pigeon size={96} flapping />
+      <div className="flex items-center gap-1.5" aria-hidden>
+        {["bg-primary", "bg-yellow", "bg-blue"].map((color, i) => (
+          <span
+            key={color}
+            className={`h-3 w-3 animate-bob rounded-full ${color}`}
+            style={{ animationDelay: `${i * 0.18}s` }}
+          />
         ))}
       </div>
+      <p className="font-display text-lg font-black">Pulling into the station…</p>
     </main>
   );
 }
